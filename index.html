@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TBR Wheel</title>
+
+  <!-- Wheel + animation libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/winwheel@2.7.0/Winwheel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.2/gsap.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Trebuchet MS', sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #fff0f6;
+      color: #5a4a4a;
+    }
+
+    h1 {
+      font-family: Georgia, serif;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ffc2d1;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 12px;
+      border: none;
+      background: #ff8fab;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #fb6f92;
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>📚 TBR Wheel</h1>
+
+  <input id="bookInput" placeholder="Enter book name" />
+  <button onclick="addBook()">Add</button>
+  <button onclick="clearBooks()">Clear All</button>
+
+  <br><br>
+
+  <canvas id="wheelCanvas" width="300" height="300"></canvas>
+
+  <br>
+  <button onclick="spinWheel()">Spin 🎡</button>
+
+  <h2 id="result"></h2>
+
+<script>
+let books = JSON.parse(localStorage.getItem("books")) || [];
+
+function saveBooks() {
+  localStorage.setItem("books", JSON.stringify(books));
+}
+
+function addBook() {
+  const input = document.getElementById("bookInput");
+
+  if (input.value.trim() !== "") {
+    books.push(input.value.trim());
+    input.value = "";
+    saveBooks();
+    drawWheel();
+  }
+}
+
+function clearBooks() {
+  books = [];
+  saveBooks();
+  drawWheel();
+  document.getElementById("result").innerText = "";
+}
+
+let wheel;
+
+function drawWheel() {
+  wheel = new Winwheel({
+    canvasId: 'wheelCanvas',
+    numSegments: books.length || 1,
+    segments: books.length
+      ? books.map((b, i) => ({
+          text: b,
+          fillStyle: ["#ffd6e0", "#e7c6ff", "#caffbf", "#bde0fe"][i % 4]
+        }))
+      : [{ text: "Add books!", fillStyle: "#f8edeb" }],
+    animation: {
+      type: 'spinToStop',
+      duration: 4,
+      spins: 6,
+      callbackFinished: showResult
+    }
+  });
+}
+
+function spinWheel() {
+  if (books.length === 0) {
+    alert("Add some books first!");
+    return;
+  }
+  wheel.startAnimation();
+}
+
+function showResult(segment) {
+  document.getElementById("result").innerText =
+    "You got: " + segment.text;
+
+  // remove selected book after spin
+  books = books.filter(b => b !== segment.text);
+  saveBooks();
+  drawWheel();
+}
+
+// initialize wheel on load
+drawWheel();
+</script>
+
+</body>
+</html>
