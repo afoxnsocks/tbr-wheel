@@ -24,6 +24,7 @@
       padding: 10px;
       border-radius: 10px;
       border: 1px solid #ffc2d1;
+      width: min(360px, 80vw);
     }
 
     button {
@@ -42,6 +43,49 @@
 
     canvas {
       margin-top: 20px;
+    }
+
+    /* Popup modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(90, 74, 74, 0.45);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 22px;
+      padding: 28px 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+      border: 2px solid #f7d6e0;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      color: #8a4fff;
+    }
+
+    .winner-book {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin: 12px 0 18px;
+      color: #7b2cbf;
+      word-break: break-word;
+    }
+
+    .modal button {
+      background: linear-gradient(135deg, #ff8fab, #bdb2ff);
+    }
+
+    .modal button:hover {
+      background: linear-gradient(135deg, #fb6f92, #9d8cff);
     }
   </style>
 </head>
@@ -63,18 +107,60 @@
 
   <h2 id="result"></h2>
 
+  <!-- Winner popup -->
+  <div id="winnerModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>🎉 Winner!</h2>
+      <div id="winnerText" class="winner-book"></div>
+      <button onclick="hideWinnerModal()">Close</button>
+    </div>
+  </div>
+
 <script>
 let books = JSON.parse(localStorage.getItem("books")) || [];
+let wheel;
+
+const pastelColors = [
+  "#ffd6e7",
+  "#f3c4fb",
+  "#e7c6ff",
+  "#d8bbff",
+  "#cdb4db",
+  "#ffc8dd",
+  "#f1d4e5",
+  "#e0aaff"
+];
 
 function saveBooks() {
   localStorage.setItem("books", JSON.stringify(books));
 }
 
+function wrapText(text, maxChars = 12) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + " " + word : word;
+    if (testLine.length <= maxChars) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+
+  if (currentLine) lines.push(currentLine);
+
+  return lines.join("\n");
+}
+
 function addBook() {
   const input = document.getElementById("bookInput");
+  const value = input.value.trim();
 
-  if (input.value.trim() !== "") {
-    books.push(input.value.trim());
+  if (value !== "") {
+    books.push(value);
     input.value = "";
     saveBooks();
     drawWheel();
@@ -86,20 +172,33 @@ function clearBooks() {
   saveBooks();
   drawWheel();
   document.getElementById("result").innerText = "";
+  hideWinnerModal();
 }
-
-let wheel;
 
 function drawWheel() {
   wheel = new Winwheel({
     canvasId: 'wheelCanvas',
     numSegments: books.length || 1,
     segments: books.length
-      ? books.map((b, i) => ({
-          text: b,
-          fillStyle: ["#ffd6e0", "#e7c6ff", "#caffbf", "#bde0fe"][i % 4]
+      ? books.map((book, i) => ({
+          text: wrapText(book, 12),
+          originalText: book,
+          fillStyle: pastelColors[i % pastelColors.length],
+          textFillStyle: "#5a4a4a",
+          textFontFamily: "Trebuchet MS",
+          textFontSize: 16,
+          textOrientation: "horizontal",
+          textAlignment: "center",
+          textDirection: "normal",
+          textMargin: 10
         }))
-      : [{ text: "Add books!", fillStyle: "#f8edeb" }],
+      : [{
+          text: "Add books!",
+          fillStyle: "#f8edeb",
+          textFillStyle: "#5a4a4a",
+          textFontFamily: "Trebuchet MS",
+          textFontSize: 16
+        }],
     animation: {
       type: 'spinToStop',
       duration: 4,
@@ -107,6 +206,8 @@ function drawWheel() {
       callbackFinished: showResult
     }
   });
+
+  wheel.draw();
 }
 
 function spinWheel() {
@@ -118,16 +219,27 @@ function spinWheel() {
 }
 
 function showResult(segment) {
-  document.getElementById("result").innerText =
-    "You got: " + segment.text;
+  const winner = segment.originalText || segment.text.replace(/\n/g, " ");
 
-  // remove selected book after spin
-  books = books.filter(b => b !== segment.text);
+  document.getElementById("result").innerText = "You got: " + winner;
+  document.getElementById("winnerText").innerText = winner;
+  document.getElementById("winnerModal").style.display = "flex";
+
+  books = books.filter(b => b !== winner);
   saveBooks();
   drawWheel();
 }
 
-// initialize wheel on load
+function hideWinnerModal() {
+  document.getElementById("winnerModal").style.display = "none";
+}
+
+function closeModal(event) {
+  if (event.target.id === "winnerModal") {
+    hideWinnerModal();
+  }
+}
+
 drawWheel();
 </script>
 
