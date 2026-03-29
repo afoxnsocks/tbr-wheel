@@ -146,6 +146,7 @@
 let books = JSON.parse(localStorage.getItem("books")) || [];
 let wheel = null;
 let isSpinning = false;
+let resultShown = false;
 
 const pastelColors = [
   "#ffd6e7",
@@ -190,7 +191,6 @@ function wrapText(text, maxChars = 12) {
   }
 
   if (currentLine) lines.push(currentLine);
-
   return lines.join("\n");
 }
 
@@ -232,13 +232,9 @@ function clearBooks() {
 
 function drawWheel() {
   wheel = new Winwheel({
-    canvasId: 'wheelCanvas',
+    canvasId: "wheelCanvas",
     numSegments: books.length || 1,
     outerRadius: 150,
-    innerRadius: 0,
-    textFontFamily: "Trebuchet MS",
-    textFillStyle: "#5a4a4a",
-    textFontSize: 14,
     segments: books.length
       ? books.map((book, i) => {
           const maxChars = getMaxCharsForLabel(book);
@@ -265,10 +261,10 @@ function drawWheel() {
           textFontSize: 16
         }],
     animation: {
-      type: 'spinToStop',
+      type: "spinToStop",
       duration: 4,
       spins: 6,
-      callbackFinished: onSpinFinished
+      callbackFinished: "showResult()"
     }
   });
 
@@ -283,14 +279,24 @@ function spinWheel() {
 
   if (isSpinning) return;
   isSpinning = true;
+  resultShown = false;
 
   document.getElementById("result").innerText = "";
   hideWinnerModal();
 
   wheel.startAnimation();
+
+  // Backup in case the Winwheel callback doesn't fire in this browser/version
+  setTimeout(() => {
+    if (isSpinning && !resultShown) {
+      showResult();
+    }
+  }, 4200);
 }
 
-function onSpinFinished() {
+function showResult() {
+  if (resultShown) return;
+  resultShown = true;
   isSpinning = false;
 
   const segment = wheel.getIndicatedSegment();
@@ -319,5 +325,3 @@ function closeModal(event) {
 
 drawWheel();
 </script>
-</body>
-</html>
