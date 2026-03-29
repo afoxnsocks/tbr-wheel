@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TBR Wheel</title>
 
   <!-- Wheel + animation libraries -->
@@ -8,13 +9,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
   <style>
+    :root {
+      --pink: #ff8fab;
+      --pink-dark: #fb6f92;
+      --text: #5a4a4a;
+      --purple: #7b2cbf;
+      --panel: rgba(255, 255, 255, 0.82);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Trebuchet MS', sans-serif;
       text-align: center;
-      padding: 20px;
-      color: #5a4a4a;
+      color: var(--text);
       min-height: 100vh;
       margin: 0;
+      padding: 20px 16px 40px;
       background:
         linear-gradient(rgba(255, 240, 246, 0.75), rgba(255, 240, 246, 0.75)),
         url("background.png") no-repeat center center fixed;
@@ -23,44 +36,80 @@
 
     h1 {
       font-family: Georgia, serif;
-      margin-bottom: 10px;
+      margin: 8px 0 16px;
       color: #6d3b6f;
       text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+      font-size: clamp(2rem, 5vw, 3rem);
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
     }
 
     input {
-      padding: 10px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 12px;
       border: 1px solid #ffc2d1;
-      width: min(360px, 80vw);
+      width: min(420px, 86vw);
       outline: none;
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.88);
+      font-size: 16px;
     }
 
     button {
-      padding: 10px 15px;
-      margin: 5px;
+      padding: 12px 16px;
       border-radius: 12px;
       border: none;
-      background: #ff8fab;
+      background: var(--pink);
       color: white;
       cursor: pointer;
       transition: 0.2s ease;
       box-shadow: 0 6px 14px rgba(255, 143, 171, 0.25);
+      font-size: 16px;
+      min-height: 44px;
     }
 
     button:hover {
-      background: #fb6f92;
+      background: var(--pink-dark);
       transform: translateY(-1px);
     }
 
+    .wheel-wrap {
+      position: relative;
+      display: inline-block;
+      margin-top: 10px;
+      padding-top: 22px;
+    }
+
+    .pointer {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-bottom: 26px solid #7b2cbf;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.18));
+      z-index: 5;
+    }
+
     canvas {
-      margin-top: 20px;
+      display: block;
+      margin: 0 auto;
       border-radius: 50%;
       box-shadow:
         0 0 18px rgba(255, 182, 193, 0.55),
         0 0 40px rgba(177, 156, 255, 0.28);
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.16);
+      touch-action: manipulation;
+      max-width: 90vw;
+      height: auto;
     }
 
     #result {
@@ -69,6 +118,35 @@
       font-size: 1.2rem;
       font-weight: bold;
       text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+      min-height: 1.4em;
+    }
+
+    .history {
+      width: min(520px, 92vw);
+      margin: 24px auto 0;
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--panel);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      text-align: left;
+    }
+
+    .history h3 {
+      margin: 0 0 10px;
+      color: #6d3b6f;
+    }
+
+    .history-list {
+      margin: 0;
+      padding-left: 20px;
+      max-height: 160px;
+      overflow: auto;
+    }
+
+    .history-list li {
+      margin: 6px 0;
+      word-break: break-word;
     }
 
     /* Winner popup */
@@ -114,24 +192,89 @@
     .modal button:hover {
       background: linear-gradient(135deg, #fb6f92, #9d8cff);
     }
+
+    /* Sparkles */
+    .sparkle {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000000;
+      background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,182,193,0.95) 35%, rgba(177,156,255,0.9) 70%, rgba(255,255,255,0) 100%);
+      animation: sparkle-float 900ms ease-out forwards;
+      filter: blur(0.2px);
+    }
+
+    @keyframes sparkle-float {
+      0% {
+        transform: translate(0, 0) scale(0.4);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(1.4);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px 10px 34px;
+        background-attachment: scroll;
+      }
+
+      .controls {
+        gap: 10px;
+      }
+
+      input {
+        width: 100%;
+        max-width: 520px;
+      }
+
+      button {
+        width: auto;
+      }
+
+      .wheel-wrap {
+        width: min(88vw, 340px);
+      }
+
+      canvas {
+        width: min(88vw, 340px) !important;
+        height: min(88vw, 340px) !important;
+      }
+
+      .history {
+        text-align: left;
+      }
+    }
   </style>
 </head>
 
 <body>
   <h1>📚 TBR Wheel</h1>
 
-  <input id="bookInput" placeholder="Enter book name" />
-  <button onclick="addBook()">Add</button>
-  <button onclick="clearBooks()">Clear All</button>
+  <div class="controls">
+    <input id="bookInput" placeholder="Enter book name" />
+    <button onclick="addBook()">Add</button>
+    <button onclick="clearBooks()">Clear All</button>
+  </div>
 
-  <br><br>
-
-  <canvas id="wheelCanvas" width="320" height="320"></canvas>
+  <div class="wheel-wrap">
+    <div class="pointer"></div>
+    <canvas id="wheelCanvas"></canvas>
+  </div>
 
   <br>
   <button onclick="spinWheel()">Spin 🎡</button>
 
   <h2 id="result"></h2>
+
+  <div class="history">
+    <h3>🏆 Winner History</h3>
+    <ol id="historyList" class="history-list"></ol>
+  </div>
 
   <!-- Winner popup -->
   <div id="winnerModal" class="modal-overlay" onclick="closeModal(event)">
@@ -144,6 +287,7 @@
 
 <script>
 let books = JSON.parse(localStorage.getItem("books")) || [];
+let history = JSON.parse(localStorage.getItem("history")) || [];
 let wheel = null;
 let isSpinning = false;
 let resultShown = false;
@@ -161,6 +305,26 @@ const pastelColors = [
 
 function saveBooks() {
   localStorage.setItem("books", JSON.stringify(books));
+}
+
+function saveHistory() {
+  localStorage.setItem("history", JSON.stringify(history));
+}
+
+function getWheelSize() {
+  const maxSize = 360;
+  const minSize = 240;
+  const target = Math.floor(Math.min(window.innerWidth * 0.82, maxSize));
+  return Math.max(minSize, target);
+}
+
+function resizeCanvas() {
+  const canvas = document.getElementById("wheelCanvas");
+  const size = getWheelSize();
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = size + "px";
+  canvas.style.height = size + "px";
 }
 
 function wrapText(text, maxChars = 12) {
@@ -231,10 +395,12 @@ function clearBooks() {
 }
 
 function drawWheel() {
+  resizeCanvas();
+
   wheel = new Winwheel({
     canvasId: "wheelCanvas",
     numSegments: books.length || 1,
-    outerRadius: 150,
+    outerRadius: getWheelSize() / 2 - 5,
     segments: books.length
       ? books.map((book, i) => {
           const maxChars = getMaxCharsForLabel(book);
@@ -286,7 +452,7 @@ function spinWheel() {
 
   wheel.startAnimation();
 
-  // Backup in case the Winwheel callback doesn't fire in this browser/version
+  // Backup in case the callback is flaky.
   setTimeout(() => {
     if (isSpinning && !resultShown) {
       showResult();
@@ -308,9 +474,33 @@ function showResult() {
   document.getElementById("winnerText").innerText = winner;
   document.getElementById("winnerModal").style.display = "flex";
 
+  history.unshift(winner);
+  saveHistory();
+  renderHistory();
+
   books = books.filter(b => b !== winner);
   saveBooks();
   drawWheel();
+
+  launchSparkles(24);
+}
+
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+
+  if (history.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No winners yet.";
+    list.appendChild(li);
+    return;
+  }
+
+  history.slice(0, 20).forEach(item => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.appendChild(li);
+  });
 }
 
 function hideWinnerModal() {
@@ -323,5 +513,38 @@ function closeModal(event) {
   }
 }
 
+function launchSparkles(count = 20) {
+  const modal = document.getElementById("winnerModal");
+  const rect = modal.getBoundingClientRect();
+
+  for (let i = 0; i < count; i++) {
+    const sparkle = document.createElement("div");
+    sparkle.className = "sparkle";
+
+    const size = 6 + Math.random() * 10;
+    sparkle.style.width = size + "px";
+    sparkle.style.height = size + "px";
+
+    const startX = rect.left + rect.width / 2 + (Math.random() * 180 - 90);
+    const startY = rect.top + rect.height / 2 + (Math.random() * 120 - 60);
+
+    sparkle.style.left = startX + "px";
+    sparkle.style.top = startY + "px";
+    sparkle.style.setProperty("--dx", (Math.random() * 220 - 110) + "px");
+    sparkle.style.setProperty("--dy", (Math.random() * 220 - 140) + "px");
+
+    document.body.appendChild(sparkle);
+
+    setTimeout(() => sparkle.remove(), 950);
+  }
+}
+
+window.addEventListener("resize", () => {
+  drawWheel();
+});
+
+renderHistory();
 drawWheel();
 </script>
+</body>
+</html>
