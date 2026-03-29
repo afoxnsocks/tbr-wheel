@@ -18,6 +18,7 @@
 
     h1 {
       font-family: Georgia, serif;
+      margin-bottom: 10px;
     }
 
     input {
@@ -35,17 +36,24 @@
       background: #ff8fab;
       color: white;
       cursor: pointer;
+      transition: 0.2s ease;
     }
 
     button:hover {
       background: #fb6f92;
+      transform: translateY(-1px);
     }
 
     canvas {
       margin-top: 20px;
     }
 
-    /* Popup modal */
+    #result {
+      margin-top: 18px;
+      color: #7b2cbf;
+    }
+
+    /* Winner popup */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -100,7 +108,7 @@
 
   <br><br>
 
-  <canvas id="wheelCanvas" width="300" height="300"></canvas>
+  <canvas id="wheelCanvas" width="320" height="320"></canvas>
 
   <br>
   <button onclick="spinWheel()">Spin 🎡</button>
@@ -136,12 +144,26 @@ function saveBooks() {
 }
 
 function wrapText(text, maxChars = 12) {
-  const words = text.split(/\s+/);
+  const words = text.trim().split(/\s+/);
   const lines = [];
   let currentLine = "";
 
   for (const word of words) {
+    // If a single word is too long, split it into chunks
+    if (word.length > maxChars) {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = "";
+      }
+
+      for (let i = 0; i < word.length; i += maxChars) {
+        lines.push(word.slice(i, i + maxChars));
+      }
+      continue;
+    }
+
     const testLine = currentLine ? currentLine + " " + word : word;
+
     if (testLine.length <= maxChars) {
       currentLine = testLine;
     } else {
@@ -153,6 +175,24 @@ function wrapText(text, maxChars = 12) {
   if (currentLine) lines.push(currentLine);
 
   return lines.join("\n");
+}
+
+function getMaxCharsForLabel(label) {
+  const len = label.length;
+
+  if (len <= 18) return 12;
+  if (len <= 28) return 10;
+  if (len <= 40) return 8;
+  return 6;
+}
+
+function getFontSizeForLabel(label) {
+  const len = label.length;
+
+  if (len <= 18) return 16;
+  if (len <= 28) return 14;
+  if (len <= 40) return 12;
+  return 10;
 }
 
 function addBook() {
@@ -180,18 +220,23 @@ function drawWheel() {
     canvasId: 'wheelCanvas',
     numSegments: books.length || 1,
     segments: books.length
-      ? books.map((book, i) => ({
-          text: wrapText(book, 12),
-          originalText: book,
-          fillStyle: pastelColors[i % pastelColors.length],
-          textFillStyle: "#5a4a4a",
-          textFontFamily: "Trebuchet MS",
-          textFontSize: 16,
-          textOrientation: "horizontal",
-          textAlignment: "center",
-          textDirection: "normal",
-          textMargin: 10
-        }))
+      ? books.map((book, i) => {
+          const maxChars = getMaxCharsForLabel(book);
+          const fontSize = getFontSizeForLabel(book);
+
+          return {
+            text: wrapText(book, maxChars),
+            originalText: book,
+            fillStyle: pastelColors[i % pastelColors.length],
+            textFillStyle: "#5a4a4a",
+            textFontFamily: "Trebuchet MS",
+            textFontSize: fontSize,
+            textOrientation: "horizontal",
+            textAlignment: "center",
+            textDirection: "normal",
+            textMargin: 8
+          };
+        })
       : [{
           text: "Add books!",
           fillStyle: "#f8edeb",
@@ -225,6 +270,7 @@ function showResult(segment) {
   document.getElementById("winnerText").innerText = winner;
   document.getElementById("winnerModal").style.display = "flex";
 
+  // remove selected book after spin
   books = books.filter(b => b !== winner);
   saveBooks();
   drawWheel();
